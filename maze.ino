@@ -3,11 +3,9 @@ const int NO_LED = -1;
 // length in milliseconds before game is reset when button held
 const int RESET_GAME_TIME = 5000;
 // debounce delay
-const int DEBOUNCE_DELAY = 250;
+const int DEBOUNCE_DELAY = 50;
 // array of all available pins
 const int ledPins[] = {13, 12, 11, 10, 9, 8, 7, 6, 5};
-// number of pins
-const int ledPinsArrayLength = sizeof(ledPins) / sizeof(ledPins[0]);
 // main game button
 const int greenButtonPin = 2;
 
@@ -27,76 +25,91 @@ void setup()
   // button connected to ground when pressed
   pinMode(greenButtonPin, INPUT_PULLUP);
 
-  initializeLeds();
+  const int pinsArrayLength = sizeof(ledPins) / sizeof(ledPins[0]);
+  initializeLeds(ledPins, pinsArrayLength);
 }
 
 void loop()
 {
   int greenButtonCurrentState = digitalRead(greenButtonPin);
 
+  // if the switch changed, due to noise or pressing, etc
+  if (greenButtonCurrentState != greenButtonPinLastState)
+  {
+    // reset the debouncing timer
+    greenButtonLastPressedTime = millis();
+  }
+
   greenButtonElapsedPressTime = millis() - greenButtonLastPressedTime;
 
-  // button released
-  if (greenButtonPinLastState == HIGH && greenButtonCurrentState == LOW)
+  // reset the game if the green button has been held for longer than the specified time
+  if (isGreenButtonPressed && greenButtonElapsedPressTime > RESET_GAME_TIME)
   {
+    const int pinsArrayLength = sizeof(ledPins) / sizeof(ledPins[0]);
 
-    isGreenButtonPressed = false;
+    resetGame(ledPins, pinsArrayLength);
 
-    if (greenButtonElapsedPressTime > RESET_GAME_TIME)
+    return;
+  }
+
+  // if the debounce delay has been exceeded
+  if ((greenButtonElapsedPressTime) > DEBOUNCE_DELAY)
+  {
+    // if the button state has changed:
+    if (isGreenButtonPressed != greenButtonCurrentState)
     {
-      resetGame();
+      isGreenButtonPressed = greenButtonCurrentState;
 
-      return;
+      // only cycle to the next LED if the new button state is HIGH
+      if (isGreenButtonPressed == HIGH)
+      {
+        const int ledPinsArrayLength = sizeof(ledPins) / sizeof(ledPins[0]);
+        selectedLedPin = cycleToNextLed(ledPins, ledPinsArrayLength, selectedLedPin);
+      }
     }
-
-    delay(DEBOUNCE_DELAY);
   }
 
-  // button pressed
-  if (greenButtonPinLastState == LOW && greenButtonCurrentState == HIGH)
-  {
-    isGreenButtonPressed = true;
-
-    greenButtonLastPressedTime = millis();
-
-    cycleToNextLed();
-  }
-
+  // save the reading. Next time through the loop, it'll be the greenButtonPinLastState:
   greenButtonPinLastState = greenButtonCurrentState;
 }
 
-void cycleToNextLed()
+int cycleToNextLed(
+    const int pins[],
+    const int pinsArrayLength,
+    int selectedPin)
 {
-  // set current LED to LOW
-  digitalWrite(ledPins[selectedLedPin], LOW);
-
-  // increment current LED
-  selectedLedPin++;
-  if (selectedLedPin == ledPinsArrayLength)
+  if (selectedPin >= 0 && selectedPin < pinsArrayLength)
   {
-    selectedLedPin = NO_LED;
+    digitalWrite(pins[selectedPin], LOW);
   }
 
-  // set current LED to HIGH if greater than, "NO_LED"
-  if (selectedLedPin > NO_LED)
+  selectedPin++;
+  if (selectedPin >= pinsArrayLength)
   {
-    digitalWrite(ledPins[selectedLedPin], HIGH);
+    selectedPin = NO_LED;
+  }
+
+  if (selectedPin >= 0 && selectedPin < pinsArrayLength)
+  {
+    digitalWrite(pins[selectedPin], HIGH);
+  }
+
+  return selectedPin;
+}
+
+void initializeLeds(const int pins[], int pinsArrayLength)
+{
+  for (int i = 0; i < pinsArrayLength; i++)
+  {
+    pinMode(pins[i], OUTPUT);
+
+    digitalWrite(pins[i], LOW);
   }
 }
 
-void initializeLeds()
+void resetGame(int pins[], int pinsArrayLength)
 {
-  for (int i = 0; i < ledPinsArrayLength; i++)
-  {
-    pinMode(ledPins[i], OUTPUT);
-
-    digitalWrite(ledPins[i], LOW);
-  }
-}
-
-void resetGame()
-{
-  initializeLeds();
+  initializeLeds(pins, pinsArrayLength);
 
   selectedLedPin = NO_LED;
   greenButtonLastPressedTime = millis();
