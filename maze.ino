@@ -20,7 +20,7 @@ enum Mode
 };
 
 // set mode prior to compile time
-const Mode mode = HARD_MODE;
+Mode mode = HARD_MODE;
 
 // main game button
 const int greenButtonPin = 2;
@@ -42,21 +42,7 @@ void setup()
   pinMode(greenButtonPin, INPUT_PULLUP);
 
   // set ledPins and length based on mode
-  if (mode == EASY_MODE)
-  {
-    ledPins = easyModePins;
-    ledPinsLength = sizeof(easyModePins) / sizeof(easyModePins[0]);
-
-    Serial.println("Mode: EASY_MODE");
-  }
-
-  if (mode == HARD_MODE)
-  {
-    ledPins = hardModePins;
-    ledPinsLength = sizeof(hardModePins) / sizeof(hardModePins[0]);
-
-    Serial.println("Mode: HARD_MODE");
-  }
+  setMode(mode);
 
   initializeLeds(ledPins, ledPinsLength);
 }
@@ -163,4 +149,28 @@ void resetGame(int pins[], int pinsArrayLength)
 
   selectedLedPin = NO_LED;
   greenButtonLastPressedTime = millis();
+}
+
+void setMode(Mode newMode)
+{
+  mode = newMode;
+
+  if (mode == EASY_MODE)
+  {
+    ledPins = easyModePins;
+    ledPinsLength = sizeof(easyModePins) / sizeof(easyModePins[0]);
+
+    Serial.println("Mode set to EASY_MODE");
+  }
+
+  if (mode == HARD_MODE)
+  {
+    ledPins = hardModePins;
+    ledPinsLength = sizeof(hardModePins) / sizeof(hardModePins[0]);
+
+    Serial.println("Mode set to HARD_MODE");
+  }
+
+  initializeLeds(ledPins, ledPinsLength);
+  selectedLedPin = NO_LED;
 }
