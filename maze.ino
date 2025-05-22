@@ -134,8 +134,31 @@ void initializeLeds(const int pins[], int pinsArrayLength)
   }
 }
 
+void indicateReset()
+{
+  const int cycles = 1;
+  const int highDelay = 200;
+  const int lowDelay = 200;
+
+  for (int cycle = 0; cycle < cycles; cycle++)
+  {
+    for (int i = ledPinsLength; i >= 0; i--)
+    {
+      digitalWrite(ledPins[i], HIGH);
+      delay(highDelay);
+    }
+
+    for (int i = ledPinsLength; i > 0; i--)
+    {
+      digitalWrite(ledPins[i], LOW);
+      delay(lowDelay);
+    }
+  }
+}
+
 void resetGame(int pins[], int pinsArrayLength)
 {
+  indicateReset();
   initializeLeds(pins, pinsArrayLength);
 
   selectedLedPin = NO_LED;
