@@ -4,8 +4,24 @@ const int NO_LED = -1;
 const int RESET_GAME_TIME = 5000;
 // debounce delay
 const int DEBOUNCE_DELAY = 50;
-// array of all available pins
-const int ledPins[] = {13, 12, 11, 10, 9, 8, 7, 6, 5};
+// pointer to current mode pins
+const int *ledPins;
+int ledPinsLength;
+
+// define pins for each mode
+const int easyModePins[] = {13, 12, 11, 10, 9};
+const int hardModePins[] = {13, 12, 11, 10, 9, 8, 7, 6, 5};
+
+// define modes
+enum Mode
+{
+  EASY_MODE,
+  HARD_MODE
+};
+
+// set mode prior to compile time
+const Mode mode = HARD_MODE;
+
 // main game button
 const int greenButtonPin = 2;
 
@@ -25,8 +41,24 @@ void setup()
   // button connected to ground when pressed
   pinMode(greenButtonPin, INPUT_PULLUP);
 
-  const int pinsArrayLength = sizeof(ledPins) / sizeof(ledPins[0]);
-  initializeLeds(ledPins, pinsArrayLength);
+  // set ledPins and length based on mode
+  if (mode == EASY_MODE)
+  {
+    ledPins = easyModePins;
+    ledPinsLength = sizeof(easyModePins) / sizeof(easyModePins[0]);
+
+    Serial.println("Mode: EASY_MODE");
+  }
+
+  if (mode == HARD_MODE)
+  {
+    ledPins = hardModePins;
+    ledPinsLength = sizeof(hardModePins) / sizeof(hardModePins[0]);
+
+    Serial.println("Mode: HARD_MODE");
+  }
+
+  initializeLeds(ledPins, ledPinsLength);
 }
 
 void loop()
@@ -45,10 +77,7 @@ void loop()
   // reset the game if the green button has been held for longer than the specified time
   if (isGreenButtonPressed && greenButtonElapsedPressTime > RESET_GAME_TIME)
   {
-    const int pinsArrayLength = sizeof(ledPins) / sizeof(ledPins[0]);
-
-    resetGame(ledPins, pinsArrayLength);
-
+    resetGame((int *)ledPins, ledPinsLength);
     return;
   }
 
@@ -63,8 +92,7 @@ void loop()
       // only cycle to the next LED if the new button state is HIGH
       if (isGreenButtonPressed == HIGH)
       {
-        const int ledPinsArrayLength = sizeof(ledPins) / sizeof(ledPins[0]);
-        selectedLedPin = cycleToNextLed(ledPins, ledPinsArrayLength, selectedLedPin);
+        selectedLedPin = cycleToNextLed(ledPins, ledPinsLength, selectedLedPin);
       }
     }
   }
@@ -102,7 +130,6 @@ void initializeLeds(const int pins[], int pinsArrayLength)
   for (int i = 0; i < pinsArrayLength; i++)
   {
     pinMode(pins[i], OUTPUT);
-
     digitalWrite(pins[i], LOW);
   }
 }
