@@ -27,11 +27,13 @@ const int greenButtonPin = 2;
 
 int selectedLedPin = NO_LED;
 int greenButtonPinLastState = LOW;
+int greenButtonLongPressCount = 0;
 
 bool isGreenButtonPressed = false;
 
 unsigned long greenButtonElapsedPressTime;
 unsigned long greenButtonLastPressedTime;
+unsigned long greenButtonLastLongPressedTime;
 
 void setup()
 {
@@ -59,6 +61,38 @@ void loop()
   }
 
   greenButtonElapsedPressTime = millis() - greenButtonLastPressedTime;
+
+  // detect long presses on green button
+  if (
+    isGreenButtonPressed
+    && greenButtonElapsedPressTime
+    > (RESET_GAME_TIME / 3)
+  ) {
+    const int difference =
+      greenButtonLastPressedTime - greenButtonLastLongPressedTime;
+
+    if (difference > 0) {
+      greenButtonLastLongPressedTime = greenButtonLastPressedTime;
+
+      if (difference < (RESET_GAME_TIME / 2)) {
+        greenButtonLongPressCount++;
+
+        if (greenButtonLongPressCount == 2) {
+          greenButtonLongPressCount = 0;
+
+          if (mode == HARD_MODE) {
+            mode = EASY_MODE;
+          } else {
+            mode = HARD_MODE;
+          }
+
+          setMode(mode);
+          resetGame((int *)ledPins, ledPinsLength);
+          return;
+        }
+      }
+    }
+  }
 
   // reset the game if the green button has been held for longer than the specified time
   if (isGreenButtonPressed && greenButtonElapsedPressTime > RESET_GAME_TIME)
@@ -88,9 +122,9 @@ void loop()
 }
 
 int cycleToNextLed(
-    const int pins[],
-    const int pinsArrayLength,
-    int selectedPin)
+  const int pins[],
+  const int pinsArrayLength,
+  int selectedPin)
 {
   if (selectedPin >= 0 && selectedPin < pinsArrayLength)
   {
@@ -144,6 +178,7 @@ void indicateReset()
 
 void resetGame(int pins[], int pinsArrayLength)
 {
+  initializeLeds(pins, pinsArrayLength);
   indicateReset();
   initializeLeds(pins, pinsArrayLength);
 
